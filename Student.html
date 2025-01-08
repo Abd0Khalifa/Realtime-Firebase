@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <a class="navbar-brand" href="#">Students</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01"
+            aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarColor01">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="Faculty.html">Add Faculty</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <br>
+    <div class="container">
+        <h1 class="text-center text-secondary">Add Student</h1>
+    </div>
+    <br>
+    <div class="container">
+        <!-- Add Student Form -->
+        <input type="hidden" id="stdID">
+        <div class="form-group row">
+            <label for="FirstName" class="col-sm-2 col-form-label">FirstName</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="FirstName" placeholder="FirstName">
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="LastName" class="col-sm-2 col-form-label">LastName</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="LastName" placeholder="LastName">
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="Age" class="col-sm-2 col-form-label">Age</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="Age" placeholder="Age">
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="Faculty" class="col-sm-2 col-form-label">Faculty</label>
+            <div class="col-sm-10">
+                <select class="form-control" id="Faculty" placeholder="Faculty"></select>
+            </div>
+        </div>
+        <input type="button" value="save" id="save" onclick="writeData()" class="btn btn-primary" />
+        <hr>
+        <div class="container">
+            <h1 class="text-center text-secondary">Students List</h1>
+        </div>
+        <br>
+        <hr>
+
+        <!-- Student Table -->
+        <table id="data" class="table table-hover">
+            <thead>
+                <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Age</th>
+                    <th>Faculty</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+
+        </table>
+    </div>
+
+
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getDatabase, ref, set, push, get, child, onValue, update } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMMZSWfOlMzUpr6ipk4pGXiHfSLnnVIPM",
+            authDomain: "faculty-project-12a92.firebaseapp.com",
+            projectId: "faculty-project-12a92",
+            storageBucket: "faculty-project-12a92.firebasestorage.app",
+            messagingSenderId: "479892318827",
+            appId: "1:479892318827:web:8e37a4bd22845479aa1f2e",
+            databaseURL: "https://faculty-project-12a92-default-rtdb.firebaseio.com/"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        document.getElementById("save").onclick = writeData;
+        function writeData() {
+            var id = $("#stdID").val();
+            var stdFirstName = $("#FirstName").val();
+            var stdLastName = $("#LastName").val();
+            var stdAge = $("#Age").val();
+            var stdFaculty = $("#Faculty").val();
+            if (id != "") {
+                var updates = {};
+                updates["Students/" + id] = { FirstName: stdFirstName, LastName: stdLastName, Age: stdAge, Faculty: stdFaculty };
+                update(ref(db), updates);
+                $("#stdID").val("");
+            }
+            else {
+                push(ref(db, 'Students/'), ({ FirstName: stdFirstName, LastName: stdLastName, Age: stdAge, Faculty: stdFaculty }));
+            }
+        }
+
+        var facultySelect = document.getElementById('Faculty');
+        var facultyMap = {};
+
+
+        onValue(ref(db, "Faculty"), (response) => {
+
+            facultySelect.innerHTML = '';
+
+            facultyMap = {};
+            var faculties = response.val();
+            if (faculties) {
+                for (var id in faculties) {
+                    facultyMap[id] = faculties[id].Name;
+                    var option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = faculties[id].Name;
+                    facultySelect.appendChild(option);
+                }
+            }
+        });
+
+
+        onValue(ref(db, "Students"), (response) => {
+            var data = response.val();
+            $("#data>tbody").empty();
+            for (var key in data) {
+                var student = data[key];
+                var facultyName = facultyMap[student.Faculty];
+                $("#data>tbody").append(`
+            <tr>
+                <td>${student.FirstName}</td>
+                <td>${student.LastName}</td>
+                <td>${student.Age}</td>
+                <td>${facultyName}</td>
+                <td>
+                    <input type="button" value="update" onclick="updateStd('${key}')" class="btn btn-warning"/>
+                    <input type="button" value="delete" onclick="deleteStd('${key}')" class="btn btn-danger"/>
+                </td>
+            </tr>
+        `);
+            }
+        });
+
+        window.updateStd = updateStd;
+        function updateStd(key) {
+            get(child(ref(db), `Students/${key}`)).then((student) => {
+                var studentJSON = student.toJSON();
+                $("#stdID").val(key);
+                $("#FirstName").val(studentJSON.FirstName);
+                $("#LastName").val(studentJSON.LastName);
+                $("#Age").val(studentJSON.Age);
+                $("#Faculty").val(studentJSON.Faculty);
+            })
+        }
+
+        window.deleteStd = deleteStd;
+        function deleteStd(key) {
+            var updates = {};
+            updates["Students/" + key] = null;
+            update(ref(db), updates);
+        }
+    </script>
+
+
+</body>
+
+</html>
